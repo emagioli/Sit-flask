@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Horários de ônibus SIT</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1>Horários SIT Macaé</h1>
+    <form id="lineForm">
+        <label for="line">Digite o código da linha:</label>
+        <input type="text" id="line" name="line" placeholder="A33">
+        <button type="submit">Exibir</button>
+    </form>
+    <div id="timetable"></div>
+
+    <script>
+        document.getElementById('lineForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const line = document.getElementById('line').value;
+            fetch('/get_timetable', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ line: line })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(error => { throw new Error(error.error); });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('timetable').innerHTML = data.error;
+                } else {
+                    let tableHTML = '<table>';
+                    tableHTML += `<tr><th colspan="2" id="tabletitle">${data.code} - ${data.line}</th></tr>`;
+                    data.timetables.forEach((day, index) => {
+                        tableHTML += `<tr><th colspan="2">${['Dias úteis', 'Sábado', 'Domingos e Feriados'][index]}</th></tr>`;
+                        day.forEach((times, idx) => {
+                            tableHTML += `<tr><td>${idx === 0 ? 'Saída '+ data.line : 'Saída Terminal Central'}</td><td>${times.join(' | ')}</td></tr>`;
+                        });
+                    });
+                    tableHTML += '</table>';
+                    document.getElementById('timetable').innerHTML = tableHTML;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('timetable').innerHTML = 'Error: ' + error.message;
+            });
+        });
+    </script>
+</body>
+</html>
